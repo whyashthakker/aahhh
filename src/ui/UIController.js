@@ -21,7 +21,7 @@ export class UIController {
     this.root.innerHTML = `
       <main class="game-shell">
         <header class="topbar">
-          <a class="brand" href="#" aria-label="Ragdoll Room home">
+          <a class="brand" href="/" aria-label="Aahhh Arcade home">
             <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
             <span>RAGDOLL<br><b>ROOM</b></span>
           </a>
@@ -31,9 +31,17 @@ export class UIController {
             <button data-environment="office" type="button"><span>▦</span> Office</button>
             <button data-environment="garden" type="button"><span>♣</span> Garden</button>
           </div>
-          <button class="icon-button" id="sound-toggle" type="button" aria-label="Mute sound" title="Toggle sound">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5Zm12.2-1.3a6 6 0 0 1 0 8.6M19.8 5a10 10 0 0 1 0 14"/></svg>
-          </button>
+          <div class="top-actions">
+            <span class="points-pill" title="Aahhh Points"><i>✦</i><b id="points-total">0</b></span>
+            <button class="room-toggle" id="room-toggle" type="button"><span>◎</span> ROOMS</button>
+            <button class="camera-toggle" id="camera-toggle" type="button" aria-label="Enable camera punch mode">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4V7Zm8 9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/></svg>
+              <span>CAM PUNCH</span>
+            </button>
+            <button class="icon-button" id="sound-toggle" type="button" aria-label="Mute sound" title="Toggle sound">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5Zm12.2-1.3a6 6 0 0 1 0 8.6M19.8 5a10 10 0 0 1 0 14"/></svg>
+            </button>
+          </div>
         </header>
 
         <section class="play-area">
@@ -70,6 +78,27 @@ export class UIController {
             <div class="stage-wash" aria-hidden="true"></div>
             <div class="combo" id="combo" aria-live="polite"><span>COMBO</span><b>0</b><small>x</small></div>
             <div class="hit-layer" id="hit-layer" aria-hidden="true"></div>
+            <div class="reaction-bubble" id="reaction-bubble" aria-live="polite"></div>
+            <div class="camera-card" id="camera-card" data-state="off">
+              <div class="camera-feed">
+                <video id="camera-video" muted playsinline></video>
+                <canvas id="camera-canvas"></canvas>
+                <div class="camera-scan" aria-hidden="true"></div>
+                <div class="camera-flash" id="camera-flash" aria-hidden="true"></div>
+                <span class="camera-live"><i></i> LOCAL VISION</span>
+              </div>
+              <div class="camera-details">
+                <div><span class="tracking-dot"></span><b id="camera-status">Starting camera…</b></div>
+                <p id="camera-message">Make a fist and punch toward the camera.</p>
+                <div class="punch-meter"><i id="punch-meter-fill"></i></div>
+                <div class="camera-controls">
+                  <label>SENSITIVITY <input id="camera-sensitivity" type="range" min="0.65" max="1.45" step="0.05" value="1" /></label>
+                  <select id="camera-quality" aria-label="Camera tracking quality"><option value="high">30 FPS</option><option value="low">ECO</option></select>
+                  <button id="fitness-toggle" type="button">30S ROUND</button>
+                </div>
+              </div>
+              <button id="camera-close" type="button" aria-label="Turn camera punch off">×</button>
+            </div>
             <div class="stage-hint" id="stage-hint">
               <span class="mouse-icon"><i></i></span>
               <span><b>CLICK TO PUNCH</b> · DRAG TO FLING</span>
@@ -83,9 +112,36 @@ export class UIController {
               <span>ENOUGH FOR NOW?</span>
               <b>Take a breath.</b>
               <button id="reset-button" type="button"><span>↻</span> Reset the room <kbd>R</kbd></button>
+              <button class="replay-button" id="replay-button" type="button" disabled><span>▶</span> Replay last 10 sec</button>
             </div>
           </aside>
         </section>
+
+        <section class="room-drawer" id="room-drawer" aria-label="Multiplayer rooms" aria-hidden="true">
+          <button class="room-close" id="room-close" type="button" aria-label="Close rooms">×</button>
+          <p class="eyebrow">PLAY TOGETHER</p>
+          <h2>Chaos is better<br>with company.</h2>
+          <p id="room-message">Create a room or enter a friend's code. Face photos always stay on your own device.</p>
+          <label>YOUR NAME<input id="room-name" maxlength="18" value="Player" autocomplete="nickname" /></label>
+          <div class="room-create-row">
+            <select id="room-mode" aria-label="Room mode"><option value="chaos">Co-op chaos</option><option value="pass">Pass the dummy</option></select>
+            <button id="room-create" type="button">CREATE ROOM</button>
+          </div>
+          <div class="room-divider"><span>OR JOIN</span></div>
+          <div class="room-join-row">
+            <input id="room-code-input" maxlength="6" placeholder="CODE" aria-label="Room code" />
+            <button id="room-join" type="button">JOIN</button>
+          </div>
+          <div class="room-live" id="room-live" hidden>
+            <div><span>ROOM</span><strong id="room-code">—</strong><button id="room-copy" type="button">COPY LINK</button></div>
+            <ul id="room-players"></ul>
+            <b id="room-turn">CO-OP CHAOS</b>
+            <button id="room-leave" type="button">LEAVE ROOM</button>
+          </div>
+        </section>
+
+        <div class="achievement-toast" id="achievement-toast" aria-live="polite"><span>ACHIEVEMENT</span><b></b></div>
+        <div class="fitness-hud" id="fitness-hud" aria-live="polite"><span>CAMERA ROUND</span><b>30</b><small>0 MOVES</small></div>
 
         <footer>
           <span>NO DUMMIES WERE HARMED IN THE MAKING OF THIS GAME.</span>
@@ -106,6 +162,23 @@ export class UIController {
     this.facePreview = this.root.querySelector('#face-preview')
     this.uploadLabel = this.root.querySelector('#upload-label')
     this.soundButton = this.root.querySelector('#sound-toggle')
+    this.cameraButton = this.root.querySelector('#camera-toggle')
+    this.cameraCard = this.root.querySelector('#camera-card')
+    this.cameraVideo = this.root.querySelector('#camera-video')
+    this.cameraCanvas = this.root.querySelector('#camera-canvas')
+    this.cameraStatus = this.root.querySelector('#camera-status')
+    this.cameraMessage = this.root.querySelector('#camera-message')
+    this.punchMeter = this.root.querySelector('#punch-meter-fill')
+    this.cameraFlash = this.root.querySelector('#camera-flash')
+    this.reactionBubble = this.root.querySelector('#reaction-bubble')
+    this.pointsTotal = this.root.querySelector('#points-total')
+    this.roomDrawer = this.root.querySelector('#room-drawer')
+    this.roomMessage = this.root.querySelector('#room-message')
+    this.roomLive = this.root.querySelector('#room-live')
+    this.replayButton = this.root.querySelector('#replay-button')
+    this.fitnessHud = this.root.querySelector('#fitness-hud')
+    this.currentEnvironment = 'studio'
+    this.hitCounter = 0
   }
 
   #bind() {
@@ -114,10 +187,29 @@ export class UIController {
     })
     this.root.querySelector('#reset-button').addEventListener('click', () => this.events.emit('room:reset'))
     this.soundButton.addEventListener('click', () => this.events.emit('sound:toggle'))
+    this.cameraButton.addEventListener('click', () => this.events.emit('camera:toggle'))
+    this.root.querySelector('#camera-close').addEventListener('click', () => this.events.emit('camera:stop'))
+    this.root.querySelector('#camera-sensitivity').addEventListener('input', (event) => this.events.emit('camera:sensitivity', { value: Number(event.target.value) }))
+    this.root.querySelector('#camera-quality').addEventListener('change', (event) => this.events.emit('camera:quality', { quality: event.target.value }))
+    this.root.querySelector('#fitness-toggle').addEventListener('click', () => this.events.emit('fitness:toggle'))
+    this.root.querySelector('#room-toggle').addEventListener('click', () => this.toggleRooms(true))
+    this.root.querySelector('#room-close').addEventListener('click', () => this.toggleRooms(false))
+    this.root.querySelector('#room-create').addEventListener('click', () => this.events.emit('multiplayer:create', {
+      name: this.root.querySelector('#room-name').value,
+      mode: this.root.querySelector('#room-mode').value,
+    }))
+    this.root.querySelector('#room-join').addEventListener('click', () => this.events.emit('multiplayer:join', {
+      name: this.root.querySelector('#room-name').value,
+      code: this.root.querySelector('#room-code-input').value,
+    }))
+    this.root.querySelector('#room-leave').addEventListener('click', () => this.events.emit('multiplayer:leave'))
+    this.root.querySelector('#room-copy').addEventListener('click', () => this.events.emit('multiplayer:copy-link'))
+    this.replayButton.addEventListener('click', () => this.events.emit('replay:request'))
     this.root.querySelectorAll('button[data-environment]').forEach((button) => {
       button.addEventListener('click', () => {
         this.root.querySelectorAll('button[data-environment]').forEach((item) => item.classList.toggle('active', item === button))
         this.root.querySelector('.stage-wrap').dataset.environment = button.dataset.environment
+        this.currentEnvironment = button.dataset.environment
         this.events.emit('environment:change', { environmentId: button.dataset.environment })
       })
     })
@@ -151,6 +243,38 @@ export class UIController {
       this.showHit(screen.x, screen.y, power)
       this.stageHint.classList.add('hidden')
     })
+    this.events.on('impact:applied', ({ power, source }) => {
+      this.hitCounter += 1
+      if (source === 'camera' || power > 1.9 || this.hitCounter % 4 === 0) this.showFunnyReaction()
+    })
+    this.events.on('camera:state', ({ state, message }) => this.setCameraState(state, message))
+    this.events.on('camera:tracking', ({ hasHand, message, charge, fist }) => {
+      this.cameraCard.classList.toggle('has-hand', hasHand)
+      this.cameraCard.classList.toggle('fist-ready', fist)
+      this.cameraStatus.textContent = message
+      this.punchMeter.style.width = `${Math.round(charge * 100)}%`
+    })
+    this.events.on('camera:flash', ({ visualX, visualY }) => {
+      this.cameraFlash.style.setProperty('--punch-x', `${visualX * 100}%`)
+      this.cameraFlash.style.setProperty('--punch-y', `${visualY * 100}%`)
+      this.cameraFlash.classList.remove('pop')
+      requestAnimationFrame(() => this.cameraFlash.classList.add('pop'))
+    })
+    this.events.on('progress:update', ({ profile }) => { this.pointsTotal.textContent = profile.points.toLocaleString() })
+    this.events.on('progress:achievement', ({ label }) => this.showAchievement(label))
+    this.events.on('replay:availability', ({ count }) => { this.replayButton.disabled = count === 0 })
+    this.events.on('replay:state', ({ replaying }) => {
+      this.replayButton.disabled = replaying
+      this.replayButton.lastChild.textContent = replaying ? ' Replaying…' : ' Replay last 10 sec'
+    })
+    this.events.on('multiplayer:state', ({ state, message }) => {
+      this.roomMessage.textContent = message
+      this.root.querySelector('#room-toggle').classList.toggle('active', state === 'joined')
+    })
+    this.events.on('multiplayer:room', ({ room, playerId }) => this.showRoom(room, playerId))
+    this.events.on('multiplayer:remote-hit', ({ player }) => this.showFunnyReaction(`${player.name} BONKED FROM AFAR!`))
+    this.events.on('multiplayer:link-copied', () => { this.roomMessage.textContent = 'Invite link copied.' })
+    this.events.on('fitness:update', (fitness) => this.showFitness(fitness))
 
     window.addEventListener('keydown', (event) => {
       if (event.target.matches('input')) return
@@ -180,6 +304,7 @@ export class UIController {
 
   showCombo(value) {
     this.comboNumber.textContent = value
+    this.combo.querySelector('span').textContent = value >= 10 ? 'UNHINGED' : value >= 6 ? 'SPICY' : value >= 3 ? 'WARMING UP' : 'COMBO'
     this.combo.classList.add('visible', 'bump')
     setTimeout(() => this.combo.classList.remove('bump'), 120)
   }
@@ -201,9 +326,68 @@ export class UIController {
     this.root.querySelectorAll('.action-card').forEach((button) => button.classList.toggle('active', button.dataset.action === actionId))
   }
 
+  setCameraState(state, message) {
+    this.cameraCard.dataset.state = state
+    this.cameraCard.classList.toggle('visible', state !== 'off')
+    this.cameraButton.classList.toggle('active', state === 'ready' || state === 'loading')
+    this.cameraButton.querySelector('span').textContent = state === 'loading' ? 'LOADING…' : state === 'ready' ? 'CAM LIVE' : 'CAM PUNCH'
+    this.cameraStatus.textContent = state === 'loading' ? 'Loading hand tracking…' : state === 'error' ? 'Camera unavailable' : 'Camera ready'
+    this.cameraMessage.textContent = message
+    if (state === 'error') this.cameraCard.classList.remove('has-hand', 'fist-ready')
+  }
+
+  showFunnyReaction(customText = '') {
+    const reactions = {
+      studio: ['MY GOOD ANGLE!', 'I FELT THAT IN 4K.', 'CAMERA LEFT! CAMERA LEFT!', 'THAT WAS UNSCRIPTED!'],
+      office: ["I'M CALLING HR!", "THIS COULD'VE BEEN AN EMAIL!", 'NOT THE SPREADSHEET!', 'MY PTO STARTS NOW.'],
+      garden: ['THE TOMATOES SAW THAT!', 'LEAVE THE DAISIES OUT OF THIS!', 'I WAS PHOTOSYNTHESIZING!', 'NOT IN FRONT OF THE BEES!'],
+    }
+    const pool = reactions[this.currentEnvironment] ?? reactions.studio
+    this.reactionBubble.textContent = customText || pool[Math.floor(Math.random() * pool.length)]
+    this.reactionBubble.classList.remove('visible')
+    requestAnimationFrame(() => this.reactionBubble.classList.add('visible'))
+    clearTimeout(this.reactionTimer)
+    this.reactionTimer = setTimeout(() => this.reactionBubble.classList.remove('visible'), 1400)
+  }
+
+  toggleRooms(open) {
+    this.roomDrawer.classList.toggle('visible', open)
+    this.roomDrawer.setAttribute('aria-hidden', String(!open))
+  }
+
+  showRoom(room, playerId) {
+    this.toggleRooms(true)
+    this.roomLive.hidden = false
+    this.root.querySelector('#room-code').textContent = room.code
+    this.root.querySelector('#room-players').innerHTML = room.players.map((player) => `
+      <li style="--player-color:${player.color}"><i></i><span>${escapeHtml(player.name)}${player.id === playerId ? ' (YOU)' : ''}</span></li>
+    `).join('')
+    const active = room.players.find((player) => player.id === room.turnPlayerId)
+    this.root.querySelector('#room-turn').textContent = room.mode === 'pass' ? `${active?.name || 'Player'}'S TURN` : 'CO-OP CHAOS'
+  }
+
+  showAchievement(label) {
+    const toast = this.root.querySelector('#achievement-toast')
+    toast.querySelector('b').textContent = label
+    toast.classList.remove('visible')
+    requestAnimationFrame(() => toast.classList.add('visible'))
+    clearTimeout(this.achievementTimer)
+    this.achievementTimer = setTimeout(() => toast.classList.remove('visible'), 2800)
+  }
+
+  showFitness({ active, remaining, moves }) {
+    this.fitnessHud.classList.toggle('visible', active)
+    this.fitnessHud.querySelector('b').textContent = Math.ceil(remaining)
+    this.fitnessHud.querySelector('small').textContent = `${moves} MOVE${moves === 1 ? '' : 'S'}`
+  }
+
   reset() {
     this.comboNumber.textContent = '0'
     this.combo.classList.remove('visible')
     this.stageHint.classList.remove('hidden')
   }
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character])
 }

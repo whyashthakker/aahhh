@@ -12,6 +12,7 @@ export class Dummy {
     this.segments = []
     this.joints = []
     this.time = 0
+    this.comedyEnergy = 0
     this.#createMaterials()
     this.#createRig()
     this.#createBody(renderer)
@@ -124,6 +125,7 @@ export class Dummy {
   #createBody(renderer) {
     const { body, bodyLight, joint, dark, face, stitch } = this.materials
     const torsoMesh = this.#createSegment('torso', 'pelvis', 'chest', 0.5, body, true)
+    this.torsoMesh = torsoMesh
     this.#createSegment('head', 'chest', 'head', 0.19, joint, true)
     this.#createSegment('leftArm', 'leftShoulder', 'leftElbow', 0.2, body)
     this.#createSegment('leftArm', 'leftElbow', 'leftHand', 0.17, bodyLight, true)
@@ -156,6 +158,17 @@ export class Dummy {
     badge.position.set(0, 0.23, 0.515)
     badge.rotation.z = -0.07
     torsoMesh.add(badge)
+
+    const tieMaterial = new THREE.MeshPhysicalMaterial({ color: 0xff657e, roughness: 0.52, sheen: 0.55, sheenColor: new THREE.Color(0xffc7d0) })
+    this.tieGroup = new THREE.Group()
+    this.tieGroup.position.set(0, 0.04, 0.54)
+    const tieKnot = this.#register(new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 0), tieMaterial), 'torso')
+    tieKnot.scale.set(1.25, 0.85, 0.55)
+    const tieTail = this.#register(new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.42, 4), tieMaterial), 'torso')
+    tieTail.position.y = -0.25
+    tieTail.rotation.y = Math.PI / 4
+    this.tieGroup.add(tieKnot, tieTail)
+    torsoMesh.add(this.tieGroup)
 
     this.#createJoint('torso', 'pelvis', 0.5, body, new THREE.Vector3(1.08, 0.72, 0.83))
     this.#createJoint('leftArm', 'leftShoulder', 0.25, joint)
@@ -219,6 +232,17 @@ export class Dummy {
     headSeam.castShadow = true
     this.headGroup.add(headSeam)
 
+    this.hatGroup = new THREE.Group()
+    this.hatGroup.position.y = 0.73
+    const hatMaterial = new THREE.MeshPhysicalMaterial({ color: 0xff657e, roughness: 0.52, sheen: 0.7, sheenColor: new THREE.Color(0xffd2dc) })
+    const hatBrim = this.#register(new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.07, 28), hatMaterial), 'head')
+    const hatCone = this.#register(new THREE.Mesh(new THREE.ConeGeometry(0.31, 0.68, 24), hatMaterial), 'head')
+    hatCone.position.y = 0.35
+    const hatPom = this.#register(new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), stitch), 'head')
+    hatPom.position.y = 0.73
+    this.hatGroup.add(hatBrim, hatCone, hatPom)
+    this.headGroup.add(this.hatGroup)
+
     const collar = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.065, 10, 28), stitch)
     collar.rotation.x = Math.PI / 2
     collar.position.y = -0.72
@@ -281,6 +305,7 @@ export class Dummy {
   }
 
   impact(part = 'torso', side = 1, power = 1) {
+    this.comedyEnergy = Math.min(1.45, this.comedyEnergy + power * 0.32)
     const targets = this.#nodesForPart(part)
     targets.forEach((name, index) => {
       const node = this.nodes[name]
@@ -309,6 +334,7 @@ export class Dummy {
   }
 
   reset() {
+    this.comedyEnergy = 0
     Object.values(this.nodes).forEach((node) => {
       node.position.copy(node.rest)
       node.previous.copy(node.rest)
@@ -376,5 +402,11 @@ export class Dummy {
     this.nodes.head.position.x += Math.sin(elapsed * 1.35) * 0.0007
     this.#solveConstraints()
     this.#syncMeshes()
+    this.comedyEnergy *= Math.pow(0.86, delta * 60)
+    const wobble = Math.sin(elapsed * 24) * this.comedyEnergy
+    this.headGroup.scale.set(1 + Math.abs(wobble) * 0.055, 1 - Math.abs(wobble) * 0.07, 1 + Math.abs(wobble) * 0.035)
+    this.hatGroup.rotation.z = wobble * 0.2
+    this.hatGroup.rotation.x = Math.cos(elapsed * 19) * this.comedyEnergy * 0.1
+    this.tieGroup.rotation.z = Math.sin(elapsed * 17 + 0.8) * this.comedyEnergy * 0.22
   }
 }

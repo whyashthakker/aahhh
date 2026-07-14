@@ -1,17 +1,23 @@
 {
-  "name": "ragdoll-room",
+  "name": "aahhh-arcade",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n WEB,ROOMS -c magenta,green \"npm:dev:web\" \"npm:dev:rooms\"",
+    "dev:web": "vite --host 127.0.0.1",
+    "dev:rooms": "node server/server.mjs --dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server/server.mjs"
   },
   "devDependencies": {
+    "concurrently": "^10.0.3",
     "vite": "^8.1.1"
   },
   "dependencies": {
-    "three": "^0.185.1"
+    "@mediapipe/tasks-vision": "^0.10.35",
+    "three": "^0.185.1",
+    "ws": "^8.21.0"
   }
 }

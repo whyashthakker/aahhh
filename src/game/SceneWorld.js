@@ -83,6 +83,30 @@ export class SceneWorld {
     }
   }
 
+  spawnProjectile(point, propId, side = 1) {
+    if (propId !== 'foam-dart') return
+    const dart = new THREE.Group()
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 0.52, 12),
+      new THREE.MeshStandardMaterial({ color: side > 0 ? 0xff6688 : 0x77dfff, roughness: 0.42 }),
+    )
+    const tip = new THREE.Mesh(
+      new THREE.ConeGeometry(0.085, 0.16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xd9ff61, roughness: 0.7 }),
+    )
+    tip.position.y = 0.34
+    dart.add(body, tip)
+    dart.rotation.x = Math.PI / 2
+    dart.rotation.z = side * 0.14
+    dart.position.set(side * -2.8, 0.25 + Math.random() * 1.25, 5.2)
+    dart.scale.setScalar(1.45)
+    dart.userData.projectile = true
+    dart.userData.origin = dart.position.clone()
+    dart.userData.target = point.clone()
+    dart.userData.life = 0
+    this.scene.add(dart)
+  }
+
   shake(power) {
     this.shakeStrength = Math.max(this.shakeStrength, Math.min(0.19, power * 0.055))
     this.rimLight.intensity = Math.min(58, 28 + power * 13)
@@ -132,6 +156,19 @@ export class SceneWorld {
         particle.geometry.dispose()
         particle.material.dispose()
         this.scene.remove(particle)
+      }
+    })
+    this.scene.children.filter((child) => child.userData.projectile).forEach((projectile) => {
+      projectile.userData.life += delta * 5.4
+      const progress = Math.min(1, projectile.userData.life)
+      projectile.position.lerpVectors(projectile.userData.origin, projectile.userData.target, 1 - ((1 - progress) ** 3))
+      projectile.rotation.z += delta * 7
+      if (progress >= 1) {
+        projectile.traverse((child) => {
+          child.geometry?.dispose()
+          child.material?.dispose()
+        })
+        this.scene.remove(projectile)
       }
     })
   }

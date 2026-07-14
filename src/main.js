@@ -1,87 +1,37 @@
 import './style.css'
-import * as THREE from 'three'
-import { EventBus } from './core/EventBus.js'
-import { GameState } from './core/GameState.js'
-import { AudioManager } from './audio/AudioManager.js'
-import { ACTIONS_BY_ID, ACTIONS_BY_KEY } from './game/actions.js'
-import { Dummy } from './game/Dummy.js'
-import { SceneWorld } from './game/SceneWorld.js'
-import { InteractionController } from './game/InteractionController.js'
-import { UIController } from './ui/UIController.js'
 
-const events = new EventBus()
-const state = new GameState(events)
-const audio = new AudioManager()
-const ui = new UIController(document.querySelector('#app'), events)
-const world = new SceneWorld(ui.stage)
-const dummy = new Dummy(world.renderer)
+const app = document.querySelector('#app')
+const route = window.location.pathname.replace(/\/+$/, '') || '/'
 
-world.add(dummy.group)
-new InteractionController({ world, dummy, events })
-
-function applyImpact(request) {
-  const power = request.power * state.intensity
-  const point = request.point ?? dummy.getWorldPoint(request.part)
-  const screen = request.screen ?? world.toScreen(point)
-  dummy.impact(request.part, request.side, power)
-  world.spawnParticles(point, Math.min(power, 2.4))
-  world.shake(power)
-  audio.playImpact(power)
-  state.registerHit()
-  events.emit('impact:applied', {
-    part: request.part,
-    side: request.side,
-    power,
-    screen,
-    source: request.source,
-  })
-  // The payload above is deliberately serializable: a future network adapter
-  // can relay player actions without coupling multiplayer to Three.js objects.
+if (route === '/punch') {
+  const { bootstrapPunchGame } = await import('./games/punch.js')
+  bootstrapPunchGame(app)
+} else {
+  document.title = 'Aahhh Arcade — Tiny games, big feelings'
+  app.innerHTML = `
+    <main class="arcade-home">
+      <header class="arcade-nav">
+        <a class="brand" href="/" aria-label="Aahhh Arcade home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+          <span>AAHHH<br><b>ARCADE</b></span>
+        </a>
+        <span>ONE URL · MANY LITTLE ESCAPES</span>
+      </header>
+      <section class="arcade-hero">
+        <p class="eyebrow">WELCOME TO THE ARCADE</p>
+        <h1>Small games for<br><em>big feelings.</em></h1>
+        <p>Pick a room. Make a little chaos. Leave lighter.</p>
+      </section>
+      <section class="game-library" aria-label="Games">
+        <a class="game-tile punch-tile" href="/punch">
+          <span class="game-number">GAME 001</span>
+          <div class="mini-dummy" aria-hidden="true"><i></i><b></b><i></i></div>
+          <div><h2>Ragdoll Room</h2><p>Add a face. Throw a punch. Let it out.</p></div>
+          <strong>PLAY NOW <span>↗</span></strong>
+        </a>
+        <article class="game-tile coming-soon"><span>GAME 002</span><b>CLASSIFIED</b><small>COMING SOON</small></article>
+        <article class="game-tile coming-soon"><span>GAME 003</span><b>CLASSIFIED</b><small>COMING SOON</small></article>
+      </section>
+    </main>
+  `
 }
-
-function runAction(actionId, source = 'unknown') {
-  const action = ACTIONS_BY_ID[actionId]
-  if (!action) return
-  ui.setActiveAction(actionId)
-  if (actionId === 'storm') audio.playFlurry()
-  action.hits.forEach((hit) => {
-    setTimeout(() => {
-      const side = hit.side === 'random' ? (Math.random() > 0.5 ? 1 : -1) : hit.side
-      const point = dummy.getWorldPoint(hit.part)
-      point.x += side * 0.2
-      events.emit('impact:request', { ...hit, side, point, source: `action:${source}` })
-    }, hit.delay)
-  })
-  events.emit('action:performed', { actionId, source, timestamp: Date.now() })
-}
-
-events.on('impact:request', applyImpact)
-events.on('action:request', ({ actionId, source }) => runAction(actionId, source))
-events.on('room:reset', () => {
-  dummy.reset()
-  state.reset()
-})
-events.on('sound:toggle', () => state.toggleSound())
-events.on('state:sound', ({ enabled }) => audio.setEnabled(enabled))
-events.on('intensity:change', ({ level }) => state.setIntensity(level))
-events.on('face:ready', ({ image }) => dummy.setFaceImage(image))
-events.on('environment:change', ({ environmentId }) => world.setEnvironment(environmentId))
-events.on('key:pressed', ({ key }) => {
-  if (key === 'r') events.emit('room:reset')
-  if (ACTIONS_BY_KEY[key]) runAction(ACTIONS_BY_KEY[key].id, 'keyboard')
-})
-
-const clock = new THREE.Clock()
-let elapsed = 0
-
-function animate() {
-  const delta = Math.min(clock.getDelta(), 0.033)
-  elapsed += delta
-  state.update(delta)
-  dummy.update(delta, elapsed)
-  world.update(delta, dummy, elapsed)
-  world.render()
-  requestAnimationFrame(animate)
-}
-
-animate()

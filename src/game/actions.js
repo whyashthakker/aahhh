@@ -16,6 +16,29 @@ export const ACTIONS = [
     hits: [{ delay: 0, part: 'torso', power: 2.15, side: 'random' }],
   },
   {
+    id: 'slap',
+    label: 'Open-hand slap',
+    description: 'Maximum theatre, zero dignity',
+    icon: '✋',
+    key: 'l',
+    hits: [{ delay: 0, part: 'head', power: 1.48, side: 'random', moveType: 'slap', propId: 'hand' }],
+  },
+  {
+    id: 'darts',
+    label: 'Foam dart volley',
+    description: 'Very serious toy business',
+    icon: '➤',
+    key: 'd',
+    hits: Array.from({ length: 3 }, (_, index) => ({
+      delay: index * 170,
+      part: index === 1 ? 'head' : 'torso',
+      power: 0.72,
+      side: index % 2 === 0 ? -1 : 1,
+      moveType: 'foam-dart',
+      propId: 'foam-dart',
+    })),
+  },
+  {
     id: 'storm',
     label: 'Fury flurry',
     description: 'Five rapid-fire hits',
@@ -26,6 +49,7 @@ export const ACTIONS = [
       part: index % 3 === 0 ? 'head' : 'torso',
       power: 0.82,
       side: index % 2 === 0 ? -1 : 1,
+      moveType: 'flurry',
     })),
   },
 ]
