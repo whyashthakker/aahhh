@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { EnvironmentManager } from './EnvironmentManager.js'
 
 export class SceneWorld {
   constructor(container) {
@@ -28,45 +29,21 @@ export class SceneWorld {
 
   #buildEnvironment() {
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8272b5, 2.7))
-    const keyLight = new THREE.DirectionalLight(0xffffff, 3.4)
-    keyLight.position.set(-4, 7, 5)
-    keyLight.castShadow = true
-    keyLight.shadow.mapSize.set(1024, 1024)
-    keyLight.shadow.camera.left = -5
-    keyLight.shadow.camera.right = 5
-    keyLight.shadow.camera.top = 7
-    keyLight.shadow.camera.bottom = -3
-    this.scene.add(keyLight)
+    this.keyLight = new THREE.DirectionalLight(0xffffff, 3.4)
+    this.keyLight.position.set(-4, 7, 5)
+    this.keyLight.castShadow = true
+    this.keyLight.shadow.mapSize.set(1024, 1024)
+    this.keyLight.shadow.camera.left = -5
+    this.keyLight.shadow.camera.right = 5
+    this.keyLight.shadow.camera.top = 7
+    this.keyLight.shadow.camera.bottom = -3
+    this.scene.add(this.keyLight)
 
     this.rimLight = new THREE.PointLight(0xbca5ff, 24, 11)
     this.rimLight.position.set(4.5, 3, 2)
     this.scene.add(this.rimLight)
 
-    const floor = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.55, 2.8, 0.18, 64),
-      new THREE.MeshStandardMaterial({ color: 0x8e73d6, roughness: 0.76, metalness: 0.03 }),
-    )
-    floor.position.y = -2.15
-    floor.receiveShadow = true
-    this.scene.add(floor)
-
-    const floorRing = new THREE.Mesh(
-      new THREE.TorusGeometry(2.34, 0.028, 8, 80),
-      new THREE.MeshBasicMaterial({ color: 0xc9bdf2, transparent: true, opacity: 0.9 }),
-    )
-    floorRing.rotation.x = Math.PI / 2
-    floorRing.position.y = -2.045
-    this.scene.add(floorRing)
-
-    for (let index = 0; index < 3; index += 1) {
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(0.7 + index * 0.57, 0.72 + index * 0.57, 64),
-        new THREE.MeshBasicMaterial({ color: 0xb5a0e8, transparent: true, opacity: 0.17, side: THREE.DoubleSide }),
-      )
-      ring.rotation.x = -Math.PI / 2
-      ring.position.y = -2.04
-      this.scene.add(ring)
-    }
+    this.environment = new EnvironmentManager(this.scene, { key: this.keyLight, rim: this.rimLight })
 
     this.shadow = new THREE.Mesh(
       new THREE.CircleGeometry(1.35, 40),
@@ -80,6 +57,10 @@ export class SceneWorld {
 
   add(object) {
     this.scene.add(object)
+  }
+
+  setEnvironment(id) {
+    this.environment.set(id)
   }
 
   spawnParticles(point, power) {
@@ -124,7 +105,7 @@ export class SceneWorld {
     this.camera.updateProjectionMatrix()
   }
 
-  update(delta, dummy) {
+  update(delta, dummy, elapsed) {
     this.shadow.position.x = dummy.nodes.pelvis.position.x * 0.4
     this.shadow.scale.x = 1 - Math.min(0.18, Math.abs(dummy.nodes.pelvis.position.z) * 0.1)
     if (this.shakeStrength > 0.001) {
@@ -138,7 +119,8 @@ export class SceneWorld {
       this.camera.position.lerp(this.baseCameraPosition, 0.25)
     }
     this.camera.lookAt(0, 0.72, 0)
-    this.rimLight.intensity = THREE.MathUtils.lerp(this.rimLight.intensity, 24, 0.09)
+    this.rimLight.intensity = THREE.MathUtils.lerp(this.rimLight.intensity, this.environment.rimIntensity, 0.09)
+    this.environment.update(elapsed)
     this.scene.children.filter((child) => child.userData.particle).forEach((particle) => {
       particle.userData.life -= delta
       particle.userData.velocity.y -= 4.2 * delta

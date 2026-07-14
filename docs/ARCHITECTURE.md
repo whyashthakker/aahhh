@@ -11,6 +11,8 @@ rooms, and multiplayer can be added without rewriting the Three.js scene.
   total hits. Persistent upgrades can layer on top of its snapshots.
 - `game/SceneWorld.js` owns the Three.js renderer, camera, environment, and
   visual effects.
+- `game/EnvironmentManager.js` owns switchable scene groups, environment-aware
+  lighting, and ambient animation. New locations stay independent of gameplay.
 - `game/Dummy.js` owns the procedural dummy mesh, face texture, and spring
   response. It does not know which button or player caused an impact.
 - `game/InteractionController.js` converts pointer input into `impact:request`

@@ -18,14 +18,35 @@ export class Dummy {
   }
 
   #createMaterials() {
+    const fabric = this.#createFabricTexture()
     this.materials = {
-      body: new THREE.MeshStandardMaterial({ color: 0x6f46c7, roughness: 0.48, metalness: 0.03 }),
-      bodyLight: new THREE.MeshStandardMaterial({ color: 0xa889ed, roughness: 0.45 }),
-      joint: new THREE.MeshStandardMaterial({ color: 0x3e286f, roughness: 0.5 }),
+      body: new THREE.MeshPhysicalMaterial({ color: 0x6f46c7, roughness: 0.76, sheen: 0.85, sheenColor: new THREE.Color(0xcbb7ff), bumpMap: fabric, bumpScale: 0.022 }),
+      bodyLight: new THREE.MeshPhysicalMaterial({ color: 0xa889ed, roughness: 0.72, sheen: 0.75, sheenColor: new THREE.Color(0xe3d8ff), bumpMap: fabric, bumpScale: 0.018 }),
+      joint: new THREE.MeshStandardMaterial({ color: 0x3e286f, roughness: 0.38, metalness: 0.08 }),
       dark: new THREE.MeshStandardMaterial({ color: 0x2b1d50, roughness: 0.62 }),
-      face: new THREE.MeshStandardMaterial({ color: 0xe7d5c1, roughness: 0.7 }),
+      face: new THREE.MeshPhysicalMaterial({ color: 0xe7d5c1, roughness: 0.74, sheen: 0.4, sheenColor: new THREE.Color(0xffffff), bumpMap: fabric, bumpScale: 0.01 }),
       stitch: new THREE.MeshStandardMaterial({ color: 0xd9ff61, roughness: 0.42, emissive: 0x304500, emissiveIntensity: 0.22 }),
     }
+  }
+
+  #createFabricTexture() {
+    const canvas = document.createElement('canvas')
+    canvas.width = 128
+    canvas.height = 128
+    const context = canvas.getContext('2d')
+    context.fillStyle = '#bdbdbd'
+    context.fillRect(0, 0, 128, 128)
+    for (let index = 0; index < 128; index += 2) {
+      context.strokeStyle = index % 4 ? 'rgba(255,255,255,.16)' : 'rgba(20,20,20,.12)'
+      context.lineWidth = 1
+      context.beginPath(); context.moveTo(0, index); context.lineTo(128, index + 16); context.stroke()
+      context.beginPath(); context.moveTo(index, 0); context.lineTo(index + 16, 128); context.stroke()
+    }
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.wrapS = THREE.RepeatWrapping
+    texture.wrapT = THREE.RepeatWrapping
+    texture.repeat.set(5, 5)
+    return texture
   }
 
   #addNode(name, x, y, z, spring = 32, drag = 0.925) {
@@ -83,12 +104,12 @@ export class Dummy {
   }
 
   #createSegment(part, a, b, radius, material, tapered = false) {
-    const geometry = tapered
-      ? new THREE.CylinderGeometry(radius * 0.88, radius, 1, 24, 1)
-      : new THREE.CylinderGeometry(radius, radius, 1, 20, 1)
+    const innerLength = Math.max(0.04, 1 - radius * 2)
+    const baseLength = innerLength + radius * 2
+    const geometry = new THREE.CapsuleGeometry(radius, innerLength, 8, tapered ? 24 : 20)
     const mesh = this.#register(new THREE.Mesh(geometry, material), part)
     this.group.add(mesh)
-    this.segments.push({ mesh, a, b })
+    this.segments.push({ mesh, a, b, baseLength })
     return mesh
   }
 
@@ -102,7 +123,7 @@ export class Dummy {
 
   #createBody(renderer) {
     const { body, bodyLight, joint, dark, face, stitch } = this.materials
-    this.#createSegment('torso', 'pelvis', 'chest', 0.5, body, true)
+    const torsoMesh = this.#createSegment('torso', 'pelvis', 'chest', 0.5, body, true)
     this.#createSegment('head', 'chest', 'head', 0.19, joint, true)
     this.#createSegment('leftArm', 'leftShoulder', 'leftElbow', 0.2, body)
     this.#createSegment('leftArm', 'leftElbow', 'leftHand', 0.17, bodyLight, true)
@@ -112,6 +133,29 @@ export class Dummy {
     this.#createSegment('leftLeg', 'leftKnee', 'leftFoot', 0.21, bodyLight, true)
     this.#createSegment('rightLeg', 'rightHip', 'rightKnee', 0.24, body)
     this.#createSegment('rightLeg', 'rightKnee', 'rightFoot', 0.21, bodyLight, true)
+
+    ;[-1, 1].forEach((side) => {
+      const strap = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.58, 0.035), bodyLight)
+      strap.position.set(side * 0.27, 0.04, 0.445)
+      strap.rotation.z = side * -0.06
+      strap.castShadow = true
+      torsoMesh.add(strap)
+      for (let stitchIndex = 0; stitchIndex < 4; stitchIndex += 1) {
+        const stitchMark = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.014, 0.018), stitch)
+        stitchMark.position.set(side * 0.27, -0.18 + stitchIndex * 0.12, 0.47)
+        torsoMesh.add(stitchMark)
+      }
+    })
+    const waistBand = new THREE.Mesh(new THREE.TorusGeometry(0.445, 0.052, 10, 36), joint)
+    waistBand.rotation.x = Math.PI / 2
+    waistBand.position.y = -0.38
+    waistBand.scale.z = 0.82
+    torsoMesh.add(waistBand)
+
+    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.13, 0.035), stitch)
+    badge.position.set(0, 0.23, 0.515)
+    badge.rotation.z = -0.07
+    torsoMesh.add(badge)
 
     this.#createJoint('torso', 'pelvis', 0.5, body, new THREE.Vector3(1.08, 0.72, 0.83))
     this.#createJoint('leftArm', 'leftShoulder', 0.25, joint)
@@ -164,6 +208,16 @@ export class Dummy {
     curvedFace.scale.z = 0.91
     this.#register(curvedFace, 'head')
     this.headGroup.add(curvedFace)
+
+    const headSeamCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.42, 0.56, 0.42),
+      new THREE.Vector3(-0.64, 0.18, 0.34),
+      new THREE.Vector3(-0.65, -0.2, 0.32),
+      new THREE.Vector3(-0.42, -0.57, 0.42),
+    ])
+    const headSeam = new THREE.Mesh(new THREE.TubeGeometry(headSeamCurve, 20, 0.017, 7, false), stitch)
+    headSeam.castShadow = true
+    this.headGroup.add(headSeam)
 
     const collar = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.065, 10, 28), stitch)
     collar.rotation.x = Math.PI / 2
@@ -287,14 +341,14 @@ export class Dummy {
     }
   }
 
-  #syncSegment({ mesh, a, b }) {
+  #syncSegment({ mesh, a, b, baseLength }) {
     const start = this.nodes[a].position
     const end = this.nodes[b].position
     const direction = new THREE.Vector3().subVectors(end, start)
     const length = Math.max(direction.length(), 0.001)
     mesh.position.copy(start).add(end).multiplyScalar(0.5)
     mesh.quaternion.setFromUnitVectors(UP, direction.normalize())
-    mesh.scale.y = length
+    mesh.scale.y = length / baseLength
   }
 
   #syncMeshes() {

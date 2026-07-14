@@ -25,7 +25,12 @@ export class UIController {
             <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
             <span>RAGDOLL<br><b>ROOM</b></span>
           </a>
-          <div class="session-pill"><span></span> PRIVATE PLAYGROUND</div>
+          <div class="environment-picker" aria-label="Choose an environment">
+            <span class="environment-label"><i></i> SCENE</span>
+            <button class="active" data-environment="studio" type="button"><span>✦</span> Studio</button>
+            <button data-environment="office" type="button"><span>▦</span> Office</button>
+            <button data-environment="garden" type="button"><span>♣</span> Garden</button>
+          </div>
           <button class="icon-button" id="sound-toggle" type="button" aria-label="Mute sound" title="Toggle sound">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5Zm12.2-1.3a6 6 0 0 1 0 8.6M19.8 5a10 10 0 0 1 0 14"/></svg>
           </button>
@@ -58,7 +63,7 @@ export class UIController {
             </div>
           </aside>
 
-          <section class="stage-wrap" aria-label="Interactive 3D training dummy">
+          <section class="stage-wrap" data-environment="studio" aria-label="Interactive 3D training dummy">
             <div id="stage"></div>
             <div class="stage-orbit orbit-one" aria-hidden="true"></div>
             <div class="stage-orbit orbit-two" aria-hidden="true"></div>
@@ -109,6 +114,13 @@ export class UIController {
     })
     this.root.querySelector('#reset-button').addEventListener('click', () => this.events.emit('room:reset'))
     this.soundButton.addEventListener('click', () => this.events.emit('sound:toggle'))
+    this.root.querySelectorAll('button[data-environment]').forEach((button) => {
+      button.addEventListener('click', () => {
+        this.root.querySelectorAll('button[data-environment]').forEach((item) => item.classList.toggle('active', item === button))
+        this.root.querySelector('.stage-wrap').dataset.environment = button.dataset.environment
+        this.events.emit('environment:change', { environmentId: button.dataset.environment })
+      })
+    })
     this.root.querySelector('#impact-range').addEventListener('input', (event) => {
       this.events.emit('intensity:change', { level: Number(event.target.value) })
     })

@@ -65,6 +65,7 @@ events.on('sound:toggle', () => state.toggleSound())
 events.on('state:sound', ({ enabled }) => audio.setEnabled(enabled))
 events.on('intensity:change', ({ level }) => state.setIntensity(level))
 events.on('face:ready', ({ image }) => dummy.setFaceImage(image))
+events.on('environment:change', ({ environmentId }) => world.setEnvironment(environmentId))
 events.on('key:pressed', ({ key }) => {
   if (key === 'r') events.emit('room:reset')
   if (ACTIONS_BY_KEY[key]) runAction(ACTIONS_BY_KEY[key].id, 'keyboard')
@@ -78,7 +79,7 @@ function animate() {
   elapsed += delta
   state.update(delta)
   dummy.update(delta, elapsed)
-  world.update(delta, dummy)
+  world.update(delta, dummy, elapsed)
   world.render()
   requestAnimationFrame(animate)
 }
