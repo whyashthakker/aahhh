@@ -5,7 +5,7 @@ export const ACTIONS = [
     description: 'A neat little bonk',
     icon: '✦',
     key: 'j',
-    hits: [{ delay: 0, part: 'head', power: 1.05, side: 'random' }],
+    hits: [{ delay: 0, part: 'head', power: 1.18, side: 'random' }],
   },
   {
     id: 'shove',
@@ -13,7 +13,7 @@ export const ACTIONS = [
     description: "Send 'em wobbling",
     icon: '↝',
     key: 's',
-    hits: [{ delay: 0, part: 'torso', power: 1.85, side: 'random' }],
+    hits: [{ delay: 0, part: 'torso', power: 2.15, side: 'random' }],
   },
   {
     id: 'storm',
@@ -24,7 +24,7 @@ export const ACTIONS = [
     hits: Array.from({ length: 5 }, (_, index) => ({
       delay: index * 135,
       part: index % 3 === 0 ? 'head' : 'torso',
-      power: 0.68,
+      power: 0.82,
       side: index % 2 === 0 ? -1 : 1,
     })),
   },

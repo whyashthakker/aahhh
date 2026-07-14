@@ -37,8 +37,7 @@ export class InteractionController {
       if (!this.pointerDown) return
       const deltaX = event.clientX - this.lastPointer.x
       const deltaY = event.clientY - this.lastPointer.y
-      this.dummy.state.angularVelocity.z += -deltaX * 0.009
-      this.dummy.state.angularVelocity.x += deltaY * 0.004
+      this.dummy.drag(this.pointerDown.hit.object.userData.part, deltaX, deltaY)
       this.lastPointer = { x: event.clientX, y: event.clientY }
     })
 

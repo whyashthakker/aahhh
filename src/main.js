@@ -25,6 +25,7 @@ function applyImpact(request) {
   const screen = request.screen ?? world.toScreen(point)
   dummy.impact(request.part, request.side, power)
   world.spawnParticles(point, Math.min(power, 2.4))
+  world.shake(power)
   audio.playImpact(power)
   state.registerHit()
   events.emit('impact:applied', {

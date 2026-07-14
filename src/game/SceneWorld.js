@@ -6,8 +6,10 @@ export class SceneWorld {
     this.scene = new THREE.Scene()
     this.scene.fog = new THREE.FogExp2(0xede9ff, 0.055)
     this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
-    this.camera.position.set(0, 1.45, 9.2)
+    this.baseCameraPosition = new THREE.Vector3(0, 1.45, 9.2)
+    this.camera.position.copy(this.baseCameraPosition)
     this.camera.lookAt(0, 0.8, 0)
+    this.shakeStrength = 0
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -36,9 +38,9 @@ export class SceneWorld {
     keyLight.shadow.camera.bottom = -3
     this.scene.add(keyLight)
 
-    const rimLight = new THREE.PointLight(0xbca5ff, 24, 11)
-    rimLight.position.set(4.5, 3, 2)
-    this.scene.add(rimLight)
+    this.rimLight = new THREE.PointLight(0xbca5ff, 24, 11)
+    this.rimLight.position.set(4.5, 3, 2)
+    this.scene.add(this.rimLight)
 
     const floor = new THREE.Mesh(
       new THREE.CylinderGeometry(2.55, 2.8, 0.18, 64),
@@ -100,6 +102,11 @@ export class SceneWorld {
     }
   }
 
+  shake(power) {
+    this.shakeStrength = Math.max(this.shakeStrength, Math.min(0.19, power * 0.055))
+    this.rimLight.intensity = Math.min(58, 28 + power * 13)
+  }
+
   toScreen(worldPoint) {
     const projected = worldPoint.clone().project(this.camera)
     const rect = this.container.getBoundingClientRect()
@@ -118,8 +125,20 @@ export class SceneWorld {
   }
 
   update(delta, dummy) {
-    this.shadow.position.x = dummy.group.position.x * 0.4
-    this.shadow.scale.x = 1 - Math.min(0.18, Math.abs(dummy.group.position.z) * 0.1)
+    this.shadow.position.x = dummy.nodes.pelvis.position.x * 0.4
+    this.shadow.scale.x = 1 - Math.min(0.18, Math.abs(dummy.nodes.pelvis.position.z) * 0.1)
+    if (this.shakeStrength > 0.001) {
+      this.camera.position.copy(this.baseCameraPosition).add(new THREE.Vector3(
+        (Math.random() - 0.5) * this.shakeStrength,
+        (Math.random() - 0.5) * this.shakeStrength,
+        Math.random() * this.shakeStrength * 0.35,
+      ))
+      this.shakeStrength *= Math.pow(0.72, delta * 60)
+    } else {
+      this.camera.position.lerp(this.baseCameraPosition, 0.25)
+    }
+    this.camera.lookAt(0, 0.72, 0)
+    this.rimLight.intensity = THREE.MathUtils.lerp(this.rimLight.intensity, 24, 0.09)
     this.scene.children.filter((child) => child.userData.particle).forEach((particle) => {
       particle.userData.life -= delta
       particle.userData.velocity.y -= 4.2 * delta

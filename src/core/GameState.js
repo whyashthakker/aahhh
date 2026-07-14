@@ -3,7 +3,7 @@ export class GameState {
     this.events = events
     this.combo = 0
     this.comboTimer = 0
-    this.intensity = 1
+    this.intensity = 1.22
     this.soundEnabled = true
     this.totalHits = 0
   }
@@ -16,7 +16,7 @@ export class GameState {
   }
 
   setIntensity(level) {
-    this.intensity = [0.62, 1, 1.42][level - 1] ?? 1
+    this.intensity = [0.82, 1.22, 1.75][level - 1] ?? 1.22
     this.events.emit('state:intensity', { level, multiplier: this.intensity })
   }
 
